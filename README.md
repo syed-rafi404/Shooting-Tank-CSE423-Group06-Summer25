@@ -149,5 +149,3 @@ This project demonstrates advanced game development concepts including 3D graphi
 ***
 
 **Note**: This game requires OpenGL-compatible graphics hardware. For best performance, ensure your system has dedicated GPU support.
-
-[1](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/77669775/0e2fba94-bcfb-4196-afaa-0ba8419844a3/paste.txt)
