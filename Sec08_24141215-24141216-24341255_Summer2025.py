@@ -870,12 +870,10 @@ def keyboardListener(key, x, y):
     global dominance_progress, player_won, _last_idle_time
 
     if key == b'a':
-        mult = 2 if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) else 1
-        whole_tank_rotation_speed = -2 * mult
+        whole_tank_rotation_speed = -2
         is_turret_realigning = True
     elif key == b'd':
-        mult = 2 if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) else 1
-        whole_tank_rotation_speed = 2 * mult
+        whole_tank_rotation_speed = 2
         is_turret_realigning = True
     elif key == b'w':
         if ultra_mode:
@@ -884,7 +882,7 @@ def keyboardListener(key, x, y):
         else:
             is_moving_backward = True
             is_moving_forward = False
-        MOVEMENT_SPEED_MULTIPLIER = 2.0 if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) else 1.0
+        MOVEMENT_SPEED_MULTIPLIER = 1.0
         is_turret_realigning = True
         camera_lock_behind = True
     elif key == b's':
@@ -893,7 +891,7 @@ def keyboardListener(key, x, y):
         else:
             is_moving_forward = True
             is_moving_backward = False
-            MOVEMENT_SPEED_MULTIPLIER = 2.0 if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) else 1.0
+            MOVEMENT_SPEED_MULTIPLIER = 1.0
             is_turret_realigning = True
             camera_lock_behind = True
     elif key == b'q':
@@ -1124,7 +1122,7 @@ def idle():
                 dyp = y - player_position[1]
                 if dxp*dxp + dyp*dyp <= pr_sq:
                     if not player_hit_this_draw:
-                        player_health = max(0, player_health - 0.5)
+                        player_health = max(0, player_health - 1)
                         if player_health == 0:
                             game_over = True
                         player_hit_this_draw = True
