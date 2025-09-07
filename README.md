@@ -78,21 +78,29 @@ Survive waves of enemy tanks while maintaining control of the battlefield. Win b
 
 ## 📋 Requirements
 
+```
 Python 3.7+
 PyOpenGL >= 3.1.0
 PyOpenGL-accelerate >= 3.1.0 (recommended)
-
+```
 
 ## 🚀 Installation
 
 1. **Clone the repository**
+```bash
 git clone https://github.com/yourusername/3d-tank-shooter.git
 cd 3d-tank-shooter
-
+```
 
 2. **Install dependencies**
-python tank_shooter.py
+```bash
+pip install PyOpenGL PyOpenGL-accelerate
+```
 
+3. **Run the game**
+```bash
+python tank_shooter.py
+```
 
 ## 🎮 Game Mechanics
 
@@ -115,7 +123,6 @@ python tank_shooter.py
 ## 🔧 Configuration
 
 The game includes several configurable parameters:
-
 - `GRID_LENGTH`: Arena size (default: 12000 units)
 - `ENEMY_COUNT`: Number of enemy tanks (default: 5)
 - `FRIENDLY_COUNT`: Number of allied tanks (default: 3)
@@ -125,7 +132,6 @@ The game includes several configurable parameters:
 ## 🤝 Contributing
 
 This project welcomes contributions! Areas for enhancement:
-
 - Additional weapon types and effects
 - New AI behavior patterns
 - Enhanced graphics and particle effects
@@ -140,6 +146,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 This project demonstrates advanced game development concepts including 3D graphics programming, AI systems, and real-time physics simulation. Built as part of ongoing exploration into computational graphics and interactive systems.
 
----
+***
 
 **Note**: This game requires OpenGL-compatible graphics hardware. For best performance, ensure your system has dedicated GPU support.
+
+[1](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/77669775/0e2fba94-bcfb-4196-afaa-0ba8419844a3/paste.txt)
