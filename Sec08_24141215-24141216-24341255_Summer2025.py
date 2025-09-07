@@ -74,13 +74,14 @@ MOVEMENT_SPEED_MULTIPLIER = 1.0
 HIT_RADIUS_MULT_PLAYER = 1.25
 HIT_RADIUS_MULT_ENEMY = 1.15
 
-DOMINANCE_RADIUS = GRID_LENGTH * 0.30
+DOMINANCE_RADIUS = GRID_LENGTH * 0.22
 DOMINANCE_TIME_REQUIRED = 15.0
 dominance_progress = 0.0
 player_won = False
 _last_idle_time = None
 
-# --- AI Tank Variables ---
+RESPAWN_DELAY_SEC = 2
+
 enemy_tanks = []
 friendly_tanks = []
 MIN_DISTANCE_BETWEEN_TANKS = 200
@@ -112,6 +113,8 @@ def is_enemy_move_blocked(nx, ny, radius, self_idx):
     if dx*dx + dy*dy < (radius + pr) ** 2:
         return True
     for i, e in enumerate(enemy_tanks):
+        if e.get('dead'):
+            continue
         if i == self_idx:
             continue
         ex, ey, _ = e['position']
@@ -130,7 +133,13 @@ def is_enemy_move_blocked(nx, ny, radius, self_idx):
 
 def update_enemy_tanks():
     er = tank_radius('enemy')
+    now = time.time()
+    for i, en in enumerate(enemy_tanks):
+        if en.get('dead') and now >= en.get('respawn_time', 0):
+            respawn_enemy(i)
     for idx, e in enumerate(enemy_tanks):
+        if e.get('dead'):
+            continue
         now = time.time()
         if random.random() < ENEMY_DIRECTION_CHANGE_PROB:
             e['rotation'] += random.uniform(-45, 45)
@@ -196,7 +205,6 @@ def update_enemy_tanks():
                     e['next_fire_time'] = now + 0.2
 
 def is_friendly_move_blocked(nx, ny, radius, self_idx):
-    # Boundary check
     wall_thickness = get_wall_thickness()
     limit = GRID_LENGTH - wall_thickness - radius
     if nx < -limit or nx > limit or ny < -limit or ny > limit:
@@ -208,6 +216,8 @@ def is_friendly_move_blocked(nx, ny, radius, self_idx):
         return True
     er = tank_radius('enemy')
     for e in enemy_tanks:
+        if e.get('dead'):
+            continue
         ex, ey, _ = e['position']
         dx = nx - ex
         dy = ny - ey
@@ -248,6 +258,8 @@ def update_friendly_tanks():
             fdy = -vy
             target_in_cone = False
             for e in enemy_tanks:
+                if e.get('dead'):
+                    continue
                 ex, ey, _ = e['position']
                 dx = ex - fx
                 dy = ey - fy
@@ -270,6 +282,8 @@ def update_friendly_tanks():
                 best = None
                 best_d2 = 1e18
                 for e in enemy_tanks:
+                    if e.get('dead'):
+                        continue
                     ex, ey, _ = e['position']
                     dx = ex - fx
                     dy = ey - fy
@@ -330,9 +344,10 @@ def tank_radius(tank_type='player'):
 def will_collide_player(nx, ny, pr):
     pr_sq = pr * pr
     for e in enemy_tanks:
+        if e.get('dead'):
+            continue
         ex, ey, _ = e['position']
         er = tank_radius('enemy')
-        # distance squared
         dx = nx - ex
         dy = ny - ey
         limit = pr + er
@@ -493,7 +508,6 @@ def draw_robot(position, chassis_angle):
     DARK = (max(pr * 0.50, 0.0), max(pg * 0.50, 0.0), max(pb * 0.50, 0.0))   
     BLADE = (0.85, 0.85, 0.9)
 
-    # Pelvis
     glColor3f(*DARK)
     glPushMatrix()
     glTranslatef(0, 0, 25*s)
@@ -551,7 +565,6 @@ def draw_robot(position, chassis_angle):
     glVertex3f(cx - half_w_core, y_eye, z_eye + half_h_core)
     glEnd()
 
-    # Side vents/ears
     glColor3f(0.08, 0.08, 0.08)
     for side in (-1, 1):
         glPushMatrix()
@@ -1021,6 +1034,8 @@ def idle():
     er = tank_radius('enemy')
     fr = tank_radius('friendly')
     for e in enemy_tanks:
+        if e.get('dead'):
+            continue
         ex, ey, ez = e['position']
         ex, ey = clamp_position(ex, ey, er)
         e['position'] = (ex, ey, ez)
@@ -1088,6 +1103,8 @@ def idle():
                     continue
                 hit_enemy_index = None
                 for ei, e in enumerate(enemy_tanks):
+                    if e.get('dead'):
+                        continue
                     ex, ey, _ = e['position']
                     dx = bx - ex
                     dy = by - ey
@@ -1097,7 +1114,8 @@ def idle():
                 if hit_enemy_index is not None:
                     global player_score
                     player_score += 2
-                    respawn_enemy(hit_enemy_index)
+                    enemy_tanks[hit_enemy_index]['dead'] = True
+                    enemy_tanks[hit_enemy_index]['respawn_time'] = time.time() + RESPAWN_DELAY_SEC
                     continue
             x = b['position'][0]
             y = b['position'][1]
@@ -1106,7 +1124,7 @@ def idle():
                 dyp = y - player_position[1]
                 if dxp*dxp + dyp*dyp <= pr_sq:
                     if not player_hit_this_draw:
-                        player_health = max(0, player_health - 1)
+                        player_health = max(0, player_health - 0.5)
                         if player_health == 0:
                             game_over = True
                         player_hit_this_draw = True
@@ -1116,6 +1134,8 @@ def idle():
                 by = b['position'][1]
                 hit_enemy_index = None
                 for ei, e in enumerate(enemy_tanks):
+                    if e.get('dead'):
+                        continue
                     ex, ey, _ = e['position']
                     dx = bx - ex
                     dy = by - ey
@@ -1123,7 +1143,8 @@ def idle():
                         hit_enemy_index = ei
                         break
                 if hit_enemy_index is not None:
-                    respawn_enemy(hit_enemy_index)
+                    enemy_tanks[hit_enemy_index]['dead'] = True
+                    enemy_tanks[hit_enemy_index]['respawn_time'] = time.time() + RESPAWN_DELAY_SEC
                     continue
             if abs(x) >= impact_limit or abs(y) >= impact_limit:
                 if b.get('owner') == 'enemy':
@@ -1184,13 +1205,16 @@ def idle():
             by = ny + pyn * Lh
             destroyed = None
             for ei, e in enumerate(enemy_tanks):
+                if e.get('dead'):
+                    continue
                 ex, ey, _ = e['position']
                 if _line_point_distance_sq(ax, ay, bx, by, ex, ey) <= (Wh + enemy_r) ** 2:
                     destroyed = ei
                     break
             if destroyed is not None:
                 player_score += 2
-                respawn_enemy(destroyed)
+                enemy_tanks[destroyed]['dead'] = True
+                enemy_tanks[destroyed]['respawn_time'] = time.time() + RESPAWN_DELAY_SEC
             p['pos'] = (nx, ny, z)
             kept_proj.append(p)
         ultra_splash_projectiles = kept_proj
@@ -1209,6 +1233,8 @@ def idle():
     if inside:
         r2 = DOMINANCE_RADIUS * DOMINANCE_RADIUS
         for e in enemy_tanks:
+            if e.get('dead'):
+                continue
             ex, ey, _ = e['position']
             if (ex*ex + ey*ey) <= r2:
                 no_enemy_inside = False
@@ -1252,7 +1278,7 @@ def fire_player():
         del shot_times[:i]
     if len(shot_times) >= OVERHEAT_THRESHOLD:
         player_overheated = True
-        player_overheat_end_time = now + 15.0  
+        player_overheat_end_time = now + 8.0
         return
     final_angle = (rotation_angle + turret_angle) % 360
     rad = math.radians(final_angle)
@@ -1274,7 +1300,7 @@ def fire_player():
     player_shots_since_reset += 1
     if len(shot_times) >= OVERHEAT_THRESHOLD:
         player_overheated = True
-        player_overheat_end_time = now + 15.0
+        player_overheat_end_time = now + 8.0
 def respawn_enemy(index):
     if index < 0 or index >= len(enemy_tanks):
         return
@@ -1387,6 +1413,8 @@ def showScreen():
     else:
         draw_tank(player_position, rotation_angle, turret_angle, tank_type='player')
     for enemy in enemy_tanks:
+        if enemy.get('dead'):
+            continue
         draw_tank(enemy['position'], enemy['rotation'], 0, tank_type='enemy')
     for friendly in friendly_tanks:
         draw_tank(friendly['position'], friendly['rotation'], 0, tank_type='friendly')
